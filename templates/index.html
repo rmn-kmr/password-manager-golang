@@ -1,0 +1,170 @@
+<!doctype html>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <title>Password Manager</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    </head>
+    <body>
+
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+        <strong class="me-auto">Error</strong>
+        <button id="toastClose" type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"> <span id="toastMessage"></span></div>
+    </div>
+    </div>
+     <div class="container">
+        <h1 class="mt-5">Password Manager</h1>
+        <hr>
+        <h3>Add new entry</h3>
+        <div class="row mt-3 ms-5 me-5">
+            <input id="websiteLink" class="col-3 me-2" style="outline: 1px solid silver; padding: 1em; " placeholder="Enter Website link. http:// https://">
+            <input id="userName" class="col-3 me-2" style="outline: 1px solid silver; padding: 1em; " placeholder="User Name" >
+            <input id="password" class="col-3 me-2" style="outline: 1px solid silver; padding: 1em; " placeholder="Password">
+            <button id="create" type="button" class="col-2 btn btn-secondary btn-lg">Create</button>
+         </div>
+
+        <div class="row mt-5 ">
+            <table id="storeList" class="table table-striped hide" style="outline: 1px solid silver; padding: 1em; ">
+                <thead>
+                    <tr>
+                        <th>Website</th>
+                        <th>User Name</th>
+                        <th>Password</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="storeBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "http:\/\/localhost:3000"
+        let websiteLink = document.getElementById("websiteLink") //websiteLink input ref
+        let userName = document.getElementById("userName") //userName input ref
+        let password = document.getElementById("password") //password input ref
+        let createBtn = document.getElementById("create") //create btn ref
+        let toastCloseBtn = document.getElementById("toastClose") //toastClose btn ref
+        let toast = document.getElementById("liveToast") //liveToast body ref
+        let toastMessage = document.getElementById("toastMessage") //toastMessage ref
+        let storeList = document.getElementById("storeList") //storeList table ref
+        let storeBody = document.getElementById("storeBody") //storeList table ref
+
+        createBtn.addEventListener('click', ()=>{
+            let payload = {websiteLink : websiteLink.value, userName : userName.value, password : password.value}
+            const body = {
+                method: "POST",
+                body: JSON.stringify(payload),
+            }
+            console.log(body)
+            fetch(`${BASE_URL}/password`, body)
+                .then((res)=> res.json())
+                .then((data)=>{
+                    console.log(data)
+                    if(data.status){
+                        websiteLink.value = ""
+                        userName.value = ""
+                        password.value = ""
+                        let totalChild = storeBody.children.length
+                        for(let i=0; i< totalChild; i++){
+                            storeBody.deleteRow(0)
+                        }
+                        fetchPasswordList()
+                    }else{
+                        showToast(data.message)
+                    }
+                })
+        })
+        toastCloseBtn.addEventListener('click', ()=>{
+            hideToast()
+        })
+        function hideToast(){
+            toastMessage.innerHTML = ""
+            toast.classList.add("hide");
+            toast.classList.remove("show");
+        }
+        function showToast(message){
+            toastMessage.innerHTML = message
+            toast.classList.add("show");
+            toast.classList.remove("hide");
+            setTimeout(()=>hideToast(), 2000)
+        }
+        fetchPasswordList()
+        function fetchPasswordList(){
+            fetch(`${BASE_URL}/password`, {method:"GET"})
+                .then((res)=> res.json())
+                .then((data) => {
+                    console.log(data)
+                    if(data.status){
+                       // loading table
+                        loadPasswordTable(data.data)
+                    }else{
+                        showToast(data.message)
+                    }
+                })
+        }
+
+        function loadPasswordTable(data){
+        // creating dynamic rows
+            
+            {{/* storeList.removeChild(storeList.getElementsByTagName("tbody")); */}}
+            var tBody = storeList.getElementsByTagName('tbody')[0]
+            console.log(tBody)
+            for(let i = 0; i < data.length; i++){
+                let passwordRow = data[i]
+                var new_row = storeBody.insertRow();
+                {{/* if(i%2 != 0){
+                    new_row.style.backgroundColor = "#d7cdcd"
+                } */}}
+                let websiteField = new_row.insertCell(0)
+                websiteField.innerHTML = passwordRow.website;
+                new_row.insertCell(1).innerHTML = passwordRow.username;
+                let passwordField = new_row.insertCell(2)
+                passwordField.innerHTML = "********";
+                let btn = document.createElement('input');
+                btn.type = "button";
+                btn.className = "btn";
+                btn.value = "SHOW";
+                btn.onclick = ((id) => function() {
+                    if(btn.value == "SHOW"){
+                        btn.value = "HIDE"
+                        passwordField.innerHTML = "plaintext"
+                        // fetch plain text password by id
+                        getPlainTextPassword(id).then((data) => {
+                            if(data){
+                                passwordField.innerHTML = data
+                            }
+                        })
+                    }else{
+                        btn.value = "SHOW"
+                        passwordField.innerHTML = "**********"
+                    }
+                        
+                })(passwordRow.id);
+                new_row.insertCell(3).appendChild(btn);
+            }
+            var tBody1 = storeList.getElementsByTagName('tbody')[0]
+             console.log(tBody1)
+        }
+        // get plain password by id
+        async function getPlainTextPassword(id) {
+            return new Promise((resolve) => fetch(`${BASE_URL}/password/${id}`, {method:"GET"})
+                .then((res)=> res.json())
+                .then((data)=>{
+                    if(data.status){
+                        resolve(data.data)
+                    }else{
+                        showToast(data.message)
+                        resolve()
+                    }
+                }))
+        }
+    </script>
+    </body>
+</html>
