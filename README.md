@@ -29,5 +29,12 @@ password on hover.
     
     // go run cmd
     go run main.go
+
+
+##### Open in browser:
+
+    ```
+     visit http://localhost:3000/
+    ```
     
 
