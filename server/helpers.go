@@ -14,7 +14,6 @@ type jsonResponse struct {
 
 func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	// decoding json in data type
-	log.Print(r.Body)
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(data)
 	if err != nil {

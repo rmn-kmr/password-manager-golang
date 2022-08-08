@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const fileName = "./data/file-storage/password.csv"
+const fileName = "./data/storage/password.csv"
 
 type PasswordData struct {
 	UUID     string `json:"id"`
@@ -62,15 +62,8 @@ func (ps *PasswordStore) GetPasswordList() ([]PasswordData, error) {
 	return fetchPasswordData()
 }
 
-func printPasswordData() {
-	for i, row := range passwordDataCache {
-		log.Print(i, "    ", row)
-	}
-}
-
 // fetch all List of password data
 func fetchPasswordData() ([]PasswordData, error) {
-	printPasswordData()
 	if passwordDataCache != nil {
 		return passwordDataCache, nil
 	}
@@ -97,15 +90,12 @@ func filterPasswordByWebsite(website string) ([]PasswordData, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Print("filterPasswordByWebsite", website)
 	var filteredRows []PasswordData
 	for _, row := range rows {
 		if row.Website != website {
 			filteredRows = append(filteredRows, row)
 		}
 	}
-	log.Print("filterPasswordByWebsite end ", len(filteredRows))
-
 	return filteredRows, nil
 }
 
